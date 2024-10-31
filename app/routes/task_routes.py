@@ -1,5 +1,5 @@
-from flask import Blueprint, abort, make_response, request
-from constants import ID, TITLE, DESCRIPTION, COMPLETED_AT, ORDER_BY, MESSAGE
+from flask import Blueprint, abort, make_response, request, Response
+from constants import ID, TITLE, DESCRIPTION, COMPLETED_AT, ORDER_BY, MESSAGE, MIMETYPE_JSON
 from app.db import db
 from app.models.task import Task
 
@@ -43,6 +43,19 @@ def get_all_tasks():
 def get_one_task(task_id):
     return {"task": validate_task(task_id).to_dict()}
 
+@tasks_bp.put("/<task_id>")
+def update_task(task_id):
+    task = validate_task(task_id)
+    request_body = request.get_json()
+
+    task.title = request_body[TITLE]
+    task.description = request_body[DESCRIPTION]
+    task.completed_at = request_body.get(COMPLETED_AT)
+
+    db.session.commit()
+
+    return {"task": task.to_dict()}, 200
+
 def get_query_params():
     return {
         ID: request.args.get(ID),
@@ -56,12 +69,13 @@ def filter_query(query, params):
         query = query.where(Task.id == validate_cast_type(params[ID], int, ID))
 
     if params[TITLE]:
-        query = query.where(Task.TITLE == params[TITLE])
+        query = query.where(Task.title == params[TITLE])
 
     if params[DESCRIPTION]:
         query = query.where(Task.description.ilike(f"%{params[DESCRIPTION]}%"))
 
-    # filter query for completed_at
+    if params.get(COMPLETED_AT):
+        query = query.where(Task.completed_at == params[COMPLETED_AT])
 
     return query
 
