@@ -11,6 +11,3 @@ IS_COMPLETE = 'is_complete'
 ORDER_BY = 'order_by'
 MESSAGE = 'message'
 TASK = 'task'
-
-# MIME Types
-MIMETYPE_JSON = "application/json"
