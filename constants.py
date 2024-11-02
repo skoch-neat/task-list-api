@@ -2,23 +2,23 @@
 Constants for the Task List API
 '''
 
-# Constants for query parameter keys
+# Model keys
 ID = 'id'
 TITLE = 'title'
 DESCRIPTION = 'description'
 COMPLETED_AT = 'completed_at'
 IS_COMPLETE = 'is_complete'
-ORDER_BY = 'order_by'
+GOAL_ID = 'goal_id'
+TASK_ID = 'task_id'
 
-# Sort options
+# Query params
+ORDER_BY = 'order_by'
 ASC = 'asc'
 DESC = 'desc'
-
-# Default values
 DEFAULT_ORDER_BY = TITLE
 DEFAULT_SORT_ORDER = ASC
 
-# Response body keys
+# Body keys
 GOAL = 'goal'
 TASK = 'task'
 DETAILS = 'details'

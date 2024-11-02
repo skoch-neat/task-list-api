@@ -3,9 +3,9 @@ from constants import ID, TITLE, GOAL, ORDER_BY, DEFAULT_ORDER_BY, SORT, ASC, DE
 from app.db import db
 from app.models.goal import Goal
 
-goals_bp = Blueprint('goals_bp', __name__, url_prefix='/goals')
+bp = Blueprint('goals_bp', __name__, url_prefix='/goals')
 
-@goals_bp.post('')
+@bp.post('')
 def create_goal():
     request_body = request.get_json()
 
@@ -18,7 +18,7 @@ def create_goal():
 
     return {GOAL: new_goal.to_dict()}, 201
 
-@goals_bp.get('')
+@bp.get('')
 def get_all_goals():
     query_params = validate_query_params(get_query_params())
     query = db.select(Goal)
@@ -30,11 +30,11 @@ def get_all_goals():
 
     return [goal.to_dict() for goal in goals]
 
-@goals_bp.get('/<int:goal_id>')
+@bp.get('/<int:goal_id>')
 def get_one_goal(goal_id):
     return {GOAL: validate_goal(goal_id).to_dict()}
 
-@goals_bp.put('/<int:goal_id>')
+@bp.put('/<int:goal_id>')
 def update_goal(goal_id):
     goal = validate_goal(goal_id)
     request_body = request.get_json()
@@ -45,7 +45,7 @@ def update_goal(goal_id):
 
     return {GOAL: goal.to_dict()}
 
-@goals_bp.delete('/<int:goal_id>')
+@bp.delete('/<int:goal_id>')
 def delete_goal(goal_id):
     goal = validate_goal(goal_id)
 

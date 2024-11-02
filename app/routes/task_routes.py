@@ -9,25 +9,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-tasks_bp = Blueprint('tasks_bp', __name__, url_prefix='/tasks')
+bp = Blueprint('tasks_bp', __name__, url_prefix='/tasks')
 
 SLACKBOT_TOKEN = os.getenv('SLACKBOT_TOKEN')
 
-@tasks_bp.post('')
+@bp.post('')
 def create_task():
     request_body = request.get_json()
 
-    if TITLE not in request_body or DESCRIPTION not in request_body:
-        return {DETAILS: 'Invalid data'}, 400
+    try:
+        new_task = Task.from_dict(request_body)
+    except KeyError:
+        response = {DETAILS: "Invalid data"}
+        abort(make_response(response, 400))
 
-    new_task = Task.from_dict(request_body)
+    
 
     db.session.add(new_task)
     db.session.commit()
 
     return {TASK: new_task.to_dict()}, 201
 
-@tasks_bp.get('')
+@bp.get('')
 def get_all_tasks():
     query_params = validate_query_params(get_query_params())
     query = db.select(Task)
@@ -39,11 +42,11 @@ def get_all_tasks():
 
     return [task.to_dict() for task in tasks]
 
-@tasks_bp.get('/<task_id>')
+@bp.get('/<task_id>')
 def get_one_task(task_id):
     return {TASK: validate_task(task_id).to_dict()}
 
-@tasks_bp.put('/<task_id>')
+@bp.put('/<task_id>')
 def update_task(task_id):
     task = validate_task(task_id)
     request_body = request.get_json()
@@ -56,7 +59,7 @@ def update_task(task_id):
 
     return {TASK: task.to_dict()}
 
-@tasks_bp.patch('/<task_id>/mark_complete')
+@bp.patch('/<task_id>/mark_complete')
 def update_task_complete(task_id):
     task = validate_task(task_id)
 
@@ -69,7 +72,7 @@ def update_task_complete(task_id):
 
     return {TASK: task.to_dict()}
 
-@tasks_bp.patch('/<task_id>/mark_incomplete')
+@bp.patch('/<task_id>/mark_incomplete')
 def update_task_incomplete(task_id):
     task = validate_task(task_id)
 
@@ -79,7 +82,7 @@ def update_task_incomplete(task_id):
 
     return {TASK: task.to_dict()}
 
-@tasks_bp.delete('/<task_id>')
+@bp.delete('/<task_id>')
 def delete_task(task_id):
     task = validate_task(task_id)
 
