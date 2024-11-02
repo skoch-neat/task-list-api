@@ -20,12 +20,17 @@ class Task(db.Model):
         return self.completed_at is not None
 
     def to_dict(self):
-        return {
+        task_dict = {
             ID: self.id, 
             TITLE: self.title,
             DESCRIPTION: self.description,
             IS_COMPLETE: self.is_complete()
         }
+
+        if self.goal_id:
+            task_dict[GOAL_ID] = self.goal_id
+
+        return task_dict
     
     @classmethod
     def from_dict(cls, task_data):
