@@ -18,13 +18,9 @@ def create_task():
     request_body = request.get_json()
 
     if TITLE not in request_body or DESCRIPTION not in request_body:
-        return {'details': 'Invalid data'}, 400
+        return {DETAILS: 'Invalid data'}, 400
 
-    new_task = Task(
-        title=request_body[TITLE],
-        description=request_body[DESCRIPTION],
-        completed_at=request_body.get(COMPLETED_AT)
-    )
+    new_task = Task.from_dict(request_body)
 
     db.session.add(new_task)
     db.session.commit()

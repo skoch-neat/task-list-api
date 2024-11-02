@@ -19,6 +19,7 @@ DEFAULT_ORDER_BY = TITLE
 DEFAULT_SORT_ORDER = ASC
 
 # Response body keys
+GOAL = 'goal'
 TASK = 'task'
 DETAILS = 'details'
 SORT = 'sort'
