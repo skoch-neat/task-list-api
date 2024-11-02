@@ -67,6 +67,10 @@ def update_task_complete(task_id):
     task.completed_at = datetime.now(timezone.utc)
     db.session.commit()
 
+    channel = 'task-notifications'
+    message = f'Someone just completed the task {task.title}'
+    send_slack_message(channel, message)
+
     return {TASK: task.to_dict()}
 
 @tasks_bp.patch('/<task_id>/mark_incomplete')
@@ -131,6 +135,22 @@ def sort_query(query, params):
         query = query.order_by(order_column.desc())
 
     return query
+
+def send_slack_message(channel, message):
+    url = 'https://slack.com/api/chat.postMessage'
+    headers = {
+        'Authorization': f'Bearer {SLACKBOT_TOKEN}'
+    }
+    body = {
+    'channel': channel,
+    'text': message
+    }
+
+    response = requests.post(url, json=body, headers=headers)    
+    if response.json().get('ok') is True:
+        return response.json()
+    else:
+        print(f"Error sending message: {response.json()}")
 
 def validate_cast_type(value, target_type, param_name):
     try:
