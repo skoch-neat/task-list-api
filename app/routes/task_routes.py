@@ -1,9 +1,17 @@
+import os
+import requests
+from datetime import datetime, timezone
 from flask import Blueprint, abort, make_response, request
 from constants import ID, TITLE, DESCRIPTION, COMPLETED_AT, ORDER_BY, ASC, DESC, DEFAULT_ORDER_BY, DEFAULT_SORT_ORDER, TASK, DETAILS, SORT, MESSAGE
 from app.db import db
 from app.models.task import Task
+from dotenv import load_dotenv
+
+load_dotenv()
 
 tasks_bp = Blueprint('tasks_bp', __name__, url_prefix='/tasks')
+
+SLACKBOT_TOKEN = os.getenv('SLACKBOT_TOKEN')
 
 @tasks_bp.post('')
 def create_task():
@@ -52,6 +60,25 @@ def update_task(task_id):
 
     return {TASK: task.to_dict()}
 
+@tasks_bp.patch('/<task_id>/mark_complete')
+def update_task_complete(task_id):
+    task = validate_task(task_id)
+
+    task.completed_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    return {TASK: task.to_dict()}
+
+@tasks_bp.patch('/<task_id>/mark_incomplete')
+def update_task_incomplete(task_id):
+    task = validate_task(task_id)
+
+    task.completed_at = None
+
+    db.session.commit()
+
+    return {TASK: task.to_dict()}
+
 @tasks_bp.delete('/<task_id>')
 def delete_task(task_id):
     task = validate_task(task_id)
@@ -79,7 +106,7 @@ def filter_query(query, params):
         query = query.where(Task.title == params[TITLE])
 
     if params[DESCRIPTION]:
-        query = query.where(Task.description.ilike(f"%{params[DESCRIPTION]}%"))
+        query = query.where(Task.description.ilike(f'%{params[DESCRIPTION]}%'))
 
     if params.get(COMPLETED_AT):
         query = query.where(Task.completed_at == params[COMPLETED_AT])
@@ -91,12 +118,12 @@ def sort_query(query, params):
     sort_order = params.get(SORT, DEFAULT_SORT_ORDER)
 
     if sort_order not in [ASC, DESC]:
-        abort(make_response({MESSAGE: f'Sort order "{sort_order}" invalid'}, 400))
+        abort(make_response({MESSAGE: f'Sort order {sort_order} invalid'}, 400))
 
     try:
         order_column = getattr(Task, order_by_param)
     except AttributeError:
-        abort(make_response({MESSAGE: f'Order by "{order_by_param}" invalid'}, 400))
+        abort(make_response({MESSAGE: f'Order by {order_by_param} invalid'}, 400))
 
     if sort_order == ASC:
         query = query.order_by(order_column.asc())
@@ -109,7 +136,7 @@ def validate_cast_type(value, target_type, param_name):
     try:
         return target_type(value)
     except (ValueError, TypeError):
-        abort(make_response({MESSAGE: f'{param_name} "{value}" invalid'}, 400))
+        abort(make_response({MESSAGE: f'{param_name} {value} invalid'}, 400))
 
 def validate_query_params(params):
     for key, value in params.items():
@@ -126,6 +153,6 @@ def validate_task(task_id):
     task = db.session.scalar(query)
 
     if not task:
-        abort(make_response({MESSAGE: f'{ID} "{task_id}" not found'}, 404))
+        abort(make_response({DETAILS: f'Task {task_id} not found'}, 404))
     
     return task
