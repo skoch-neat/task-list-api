@@ -1,9 +1,12 @@
+import os
+
 from flask import Flask
+
 from .db import db, migrate
 from .models import task, goal
 from .routes.goal_routes import bp as goals_bp
 from .routes.task_routes import bp as tasks_bp
-import os
+
 
 def create_app(config=None):
     app = Flask(__name__)
