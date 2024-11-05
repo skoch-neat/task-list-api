@@ -3,16 +3,14 @@ from datetime import datetime, timezone
 
 import requests
 from dotenv import load_dotenv
-from flask import Blueprint, abort, make_response, request
+from flask import Blueprint, request
 
 from ..db import db
 from ..models.task import Task
 from constants import (
     TITLE, DESCRIPTION, COMPLETED_AT, TASK, DETAILS,
     )
-from .route_utilities import (
-    get_and_validate_query_params, filter_and_sort_query, validate_model
-    )
+from .route_utilities import create_model, get_models_with_filters, validate_model
 
 load_dotenv()
 
@@ -23,29 +21,11 @@ SLACKBOT_TOKEN = os.getenv('SLACKBOT_TOKEN')
 @bp.post('')
 def create_task():
     request_body = request.get_json()
-
-    try:
-        new_task = Task.from_dict(request_body)
-    except KeyError:
-        response = {DETAILS: "Invalid data"}
-        abort(make_response(response, 400))
-
-    db.session.add(new_task)
-    db.session.commit()
-
-    return {TASK: new_task.to_dict()}, 201
+    return create_model(Task, request_body)
 
 @bp.get('')
 def get_all_tasks():
-    query_params = get_and_validate_query_params()
-
-    query = db.select(Task)
-    
-    query = filter_and_sort_query(query, query_params, Task)
-
-    tasks = db.session.scalars(query)
-
-    return [task.to_dict() for task in tasks]
+    return get_models_with_filters(Task, request.args)
 
 @bp.get('/<task_id>')
 def get_one_task(task_id):

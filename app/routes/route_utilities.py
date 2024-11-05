@@ -7,6 +7,18 @@ from constants import (
     QUERY_PARAMS_AND_TYPES
 )
 
+def create_model(cls, model_data):
+    try:
+        new_model = cls.from_dict(model_data)
+    except KeyError:
+        response = {'details': 'Invalid data'}
+        abort(make_response(response, 400))
+
+    db.session.add(new_model)
+    db.session.commit()
+
+    return {cls.__name__.lower(): new_model.to_dict()}, 201
+
 def get_and_validate_query_params():
     expected_params = list(QUERY_PARAMS_AND_TYPES.keys())
     expected_types = list(QUERY_PARAMS_AND_TYPES.values())
@@ -33,9 +45,23 @@ def filter_query(query, params, cls):
 
     return query
 
-def sort_query(query, params, cls):
-    order_by_param = params.get(ORDER_BY, DEFAULT_ORDER_BY)
-    sort_order = params.get(SORT, DEFAULT_SORT_ORDER)
+def get_models_with_filters(cls, filters=None):
+    query = db.select(cls)
+
+    if filters:
+        for attribute, value in filters.items():
+            if hasattr(cls, attribute):
+                query = query.where(getattr(cls, attribute).ilike(f'%{value}%'))
+
+    query = sort_query(cls, query, filters)
+
+    models = db.session.scalars(query.order_by(cls.id))
+
+    return [model.to_dict() for model in models]
+
+def sort_query(cls, query, filters=None):
+    order_by_param = filters.get(ORDER_BY, DEFAULT_ORDER_BY)
+    sort_order = filters.get(SORT, DEFAULT_SORT_ORDER)
 
     if sort_order not in [ASC, DESC]:
         response = {MESSAGE: f'Sort order {sort_order} invalid'}
@@ -76,8 +102,10 @@ def validate_model(cls, model_id):
 
 def validate_query_params(params, expected_types):
     validated_params = {}
+
     for param, expected_type in zip(params.keys(), expected_types):
         value = params.get(param)
         if value is not None:
             validated_params[param] = validate_cast_type(value, expected_type)
+
     return validated_params
