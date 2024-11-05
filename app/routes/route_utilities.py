@@ -38,12 +38,14 @@ def sort_query(query, params, cls):
     sort_order = params.get(SORT, DEFAULT_SORT_ORDER)
 
     if sort_order not in [ASC, DESC]:
-        abort(make_response({MESSAGE: f'Sort order {sort_order} invalid'}, 400))
+        response = {MESSAGE: f'Sort order {sort_order} invalid'}
+        abort(make_response(response, 400))
 
     try:
         order_column = getattr(cls, order_by_param)
     except AttributeError:
-        abort(make_response({MESSAGE: f'Order by {order_by_param} invalid'}, 400))
+        response = {MESSAGE: f'Order by {order_by_param} invalid'}
+        abort(make_response(response, 400))
 
     if sort_order == ASC:
         query = query.order_by(order_column.asc())
@@ -57,7 +59,8 @@ def validate_cast_type(value, target_type):
     try:
         return target_type(value)
     except (ValueError, TypeError):
-        abort(make_response({DETAILS: f'{value_name} {value} invalid'}, 400))
+        response = {DETAILS: f'{value_name} {value} invalid'}
+        abort(make_response(response, 400))
 
 def validate_model(cls, model_id):
     model_id = validate_cast_type(model_id, int)
@@ -66,7 +69,8 @@ def validate_model(cls, model_id):
     model = db.session.scalar(query)
 
     if not model:
-        abort(make_response({DETAILS: f'{cls.__name__} {model_id} not found'}, 404))
+        response = {DETAILS: f'{cls.__name__} {model_id} not found'}
+        abort(make_response(response, 404))
 
     return model
 
