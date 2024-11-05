@@ -1,4 +1,6 @@
-from flask import Blueprint, request
+from flask import Blueprint, abort, make_response, request
+
+from app.models.task import Task
 
 from ..db import db
 from ..models.goal import Goal
@@ -41,14 +43,38 @@ def delete_goal(goal_id):
     return {DETAILS: f'Goal {goal_id} "{goal.title}" successfully deleted'}
 
 @bp.get('/<goal_id>/tasks')
-def get_books_by_author(goal_id):
+def get_tasks_by_goal(goal_id):
     goal = validate_model(Goal, goal_id)
-    return [task.to_dict() for task in goal.tasks]
+    return {
+        'id': goal.id,
+        'title': goal.title,
+        'tasks': [task.to_dict() for task in goal.tasks]
+    }
     
 @bp.post('/<goal_id>/tasks')
 def create_task_with_goal(goal_id):
     goal = validate_model(Goal, goal_id)
     
     request_body = request.get_json()
-    request_body['goal_id'] = goal.id
-    return create_model(Goal, request_body)
+
+    if 'task_ids' not in request_body:
+        abort(make_response({'details': 'Missing task_ids'}, 400))
+    
+    task_ids = request_body['task_ids']
+
+    if not isinstance(task_ids, list):
+        abort(make_response({'details': 'task_ids must be a list'}), 400)
+    
+    tasks = []
+    for task_id in task_ids:
+        task = validate_model(Task, task_id)
+        task.goal_id = goal.id
+        tasks.append(task)
+
+    db.session.add_all(tasks)
+    db.session.commit()
+
+    return make_response({
+        'id': goal.id,
+        'task_ids': task_ids
+    }, 200)
