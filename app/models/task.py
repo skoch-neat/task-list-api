@@ -1,4 +1,6 @@
 from typing import Optional, TYPE_CHECKING
+
+from constants import COMPLETED_AT, DESCRIPTION, GOAL_ID, ID, IS_COMPLETE, TITLE
 if TYPE_CHECKING:
     from .goal import Goal
 from datetime import datetime
@@ -6,7 +8,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import db
-from constants import ID, TITLE, DESCRIPTION, IS_COMPLETE, COMPLETED_AT, GOAL_ID
 
 class Task(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -16,15 +17,12 @@ class Task(db.Model):
     goal_id: Mapped[Optional[int]] = mapped_column(ForeignKey('goal.id'))
     goal: Mapped[Optional['Goal']] = relationship(back_populates='tasks')
 
-    def is_complete(self):
-        return self.completed_at is not None
-
     def to_dict(self):
         task_dict = {
             ID: self.id, 
             TITLE: self.title,
             DESCRIPTION: self.description,
-            IS_COMPLETE: self.is_complete()
+            IS_COMPLETE: True if self.completed_at else False
         }
 
         if self.goal:
