@@ -9,7 +9,6 @@ DESCRIPTION = 'description'
 COMPLETED_AT = 'completed_at'
 IS_COMPLETE = 'is_complete'
 GOAL_ID = 'goal_id'
-TASK_ID = 'task_id'
 
 #  keys
 GOAL = 'goal'
@@ -30,3 +29,5 @@ QUERY_PARAMS_AND_TYPES = {
     ORDER_BY: type(ORDER_BY),
     SORT: type(SORT)
 }
+
+ERROR_MESSAGE_TYPES = {DETAILS, MESSAGE}

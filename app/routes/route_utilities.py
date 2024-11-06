@@ -2,14 +2,15 @@ from flask import abort, make_response, request
 
 from ..db import db
 from constants import (
-    ORDER_BY, DEFAULT_ORDER_BY, SORT, DEFAULT_SORT_ORDER, ASC, DESC, DETAILS, MESSAGE, QUERY_PARAMS_AND_TYPES
+    ORDER_BY, DEFAULT_ORDER_BY, SORT, DEFAULT_SORT_ORDER, ASC, DESC,
+    DETAILS, MESSAGE, ERROR_MESSAGE_TYPES, QUERY_PARAMS_AND_TYPES
 )
 
 def create_model(cls, model_data):
     try:
         new_model = cls.from_dict(model_data)
     except KeyError:
-        abort(make_response({DETAILS: 'Invalid data'}, 400))
+        abort_with_error('Invalid data')
 
     db.session.add(new_model)
     db.session.commit()
@@ -49,12 +50,12 @@ def sort_query(cls, query, filters):
     sort_order = filters.get(SORT, DEFAULT_SORT_ORDER).casefold()
 
     if sort_order not in {ASC.casefold(), DESC.casefold()}:
-        abort(make_response({MESSAGE: f'Sort order {sort_order} invalid'}, 400))
+        abort_with_error(f'Sort order {sort_order} invalid', MESSAGE)
 
     try:
         order_column = getattr(cls, order_by_param)
     except AttributeError:
-        abort(make_response({MESSAGE: f'Order by {order_by_param} invalid'}, 400))
+        abort_with_error(f'Order by {order_by_param} invalid', MESSAGE)
 
     return query.order_by(order_column.asc()
             if sort_order == ASC.casefold() else order_column.desc())
@@ -71,7 +72,7 @@ def validate_cast_type(value, target_type):
     try:
         return target_type(value)
     except (ValueError, TypeError):
-        abort(make_response({DETAILS: f'{value_name} {value} invalid'}, 400))
+        abort_with_error(f'{value_name} {value} invalid')
 
 def validate_model(cls, model_id):
     model_id = validate_cast_type(model_id, int)
@@ -80,7 +81,7 @@ def validate_model(cls, model_id):
     model = db.session.scalar(query)
 
     if not model:
-        abort(make_response({DETAILS: f'{cls.__name__} {model_id} not found'}, 404))
+        abort_with_error(f'{cls.__name__} {model_id} not found', DETAILS, 404)
     return model
 
 def validate_query_params(params, expected_types):
@@ -92,3 +93,8 @@ def validate_query_params(params, expected_types):
             validated_params[param] = validate_cast_type(value, expected_type)
 
     return validated_params
+
+def abort_with_error(message, message_type=DETAILS, status_code=400):
+    if message_type not in ERROR_MESSAGE_TYPES:
+        raise ValueError('message_type must be either DETAILS OR MESSAGE')
+    abort(make_response({message_type: message}, status_code))
