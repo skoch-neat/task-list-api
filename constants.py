@@ -14,6 +14,8 @@ TASK_ID = 'task_id'
 #  keys
 GOAL = 'goal'
 TASK = 'task'
+TASKS = 'tasks'
+TASK_IDS = 'task_ids'
 DETAILS = 'details'
 SORT = 'sort'
 MESSAGE = 'message'
