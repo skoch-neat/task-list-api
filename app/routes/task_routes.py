@@ -51,7 +51,7 @@ def update_task_complete(task_id):
     task.completed_at = datetime.now(timezone.utc)
     db.session.commit()
 
-    channel = 'api-test-channel'
+    channel = 'C07URTS134P'
     message = f'Someone just completed the task {task.title}'
     send_slack_message(channel, message)
 
