@@ -6,6 +6,11 @@ from constants import (
     DETAILS, MESSAGE, ERROR_MESSAGE_TYPES, QUERY_PARAMS_AND_TYPES
 )
 
+def abort_with_error(message, message_type=DETAILS, status_code=400):
+    if message_type not in ERROR_MESSAGE_TYPES:
+        raise ValueError('message_type must be either DETAILS OR MESSAGE')
+    abort(make_response({message_type: message}, status_code))
+
 def create_model(cls, model_data):
     try:
         new_model = cls.from_dict(model_data)
@@ -18,16 +23,6 @@ def create_model(cls, model_data):
     model_name = cls.__name__.lower()
     return {model_name: new_model.to_dict()}, 201
 
-def get_and_validate_query_params():
-    expected_params = list(QUERY_PARAMS_AND_TYPES.keys())
-    expected_types = list(QUERY_PARAMS_AND_TYPES.values())
-
-    query_params = get_query_params(expected_params)
-    return validate_query_params(query_params, expected_types)
-
-def get_query_params(expected_params):
-    return {attribute: request.args.get(attribute) for attribute in expected_params}
-
 def filter_and_sort_query(cls, query, filters):
     query = filter_query(cls, query, filters)
     return sort_query(cls, query, filters)
@@ -39,11 +34,21 @@ def filter_query(cls, query, filters):
                 query = query.where(getattr(cls, attribute).ilike(f'%{value}%'))
     return query
 
+def get_and_validate_query_params():
+    expected_params = list(QUERY_PARAMS_AND_TYPES.keys())
+    expected_types = list(QUERY_PARAMS_AND_TYPES.values())
+
+    query_params = get_query_params(expected_params)
+    return validate_query_params(query_params, expected_types)
+
 def get_models_with_filters(cls, filters):
     query = db.select(cls)
     query = filter_and_sort_query(cls, query, filters)
     models = db.session.scalars(query.order_by(cls.id))
     return [model.to_dict() for model in models]
+
+def get_query_params(expected_params):
+    return {attribute: request.args.get(attribute) for attribute in expected_params}
 
 def sort_query(cls, query, filters):
     order_by_param = filters.get(ORDER_BY, DEFAULT_ORDER_BY)
@@ -93,8 +98,3 @@ def validate_query_params(params, expected_types):
             validated_params[param] = validate_cast_type(value, expected_type)
 
     return validated_params
-
-def abort_with_error(message, message_type=DETAILS, status_code=400):
-    if message_type not in ERROR_MESSAGE_TYPES:
-        raise ValueError('message_type must be either DETAILS OR MESSAGE')
-    abort(make_response({message_type: message}, status_code))
